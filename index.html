@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+</head>
+<body>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+<!-- Copy after here -->
+<script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.5/lodash.min.js"></script>
+<link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+<style type="text/css">
+    .filter-bar-item {
+        margin-right: 10px;
+    }
+    .candid-wall-container {
+        text-align: left;
+    }
+</style>
+<script id="mediaTemplate" type="text/x-jsrender"><div class="candid-wall-cell"><div class="candid-wall-overlay"></div><div class="candid-wall-overlay-text"><div>SHOP NOW</div></div><a class='media' data-media-index='{{> Index }}'><img data-original="{{> Media.Images.LowResolution.Url }}" alt="{{> Title }}" style="display:inline-block;" class="lazy"></a></div>
+</script>
+<script type="text/javascript">
+    var StreetFoodFifty = function(streamId) {
+
+        var locations = {};
+        var selectedCountry;
+        var selectedCity;
+
+        this.init = function () {
+            changeStage(0);
+            resetWall();
+            loadLocations();
+        }
+
+        this.onSelectCountry = function(country) {
+            selectedCountry = country;
+            if (selectedCountry) {
+                var select = $("#city-select");
+                select.empty();
+                select.append("<option value=''>Select a city...</option>");
+                locations[selectedCountry]
+                    .sort()
+                    .forEach(function(city){
+                        select.append("<option value='"+city+"'>" + displayName(city) + "</option>");
+                    });
+                changeStage(2);
+            } else {
+                changeStage(1);
+            }
+
+        }
+
+        this.onSelectCity = function(city) {
+            selectedCity = city
+            if (selectedCity) {
+                resetWall();
+                changeStage(3);
+            } else {
+                changeStage(2);
+            }
+        }
+
+        this.onClear = function() {
+            selectedCity = null;
+            selectedCountry = null;
+            changeStage(1);
+            resetWall();
+        }
+
+        function resetWall () {
+            var options = {id: streamId}
+            var tag = getTag(selectedCountry, selectedCity);
+            if (tag) {
+                options.tag = [tag];
+            }
+            candid.wall('#container', options);
+        }
+
+        function loadLocations() {
+            $.ajax({
+                type: "GET",
+                url: "//api.getcandid.com/stream/filters/?id=" + streamId,
+                dataType: "json",
+                success: function(data) {
+                    var select = $("#country-select");
+                    locations = data.ProductStats.Keys
+                        .filter(function(key) {
+                            return key.Term.match(/50[\w_]+50[\w_]+/)
+                        })
+                        .map(function(key) {
+                            return getLocationFromTag(key.Term);
+                        })
+                        .reduce(function (locs, loc) {
+                            var cities = locs[loc.country] || [];
+                            cities.push(loc.city);
+                            locs[loc.country] = cities;
+                            return locs;
+                        }, {});
+                    select.empty();
+                    select.append("<option value=''>Select a country...</option>");
+                    Object.keys(locations).sort().forEach(function(country) {
+                        select.append("<option value='"+country+"'>" + displayName(country) + "</option>")
+                    })
+                    changeStage(1);
+                }
+            });
+        }
+
+        function getTag (country, city) {
+            if (country && city) {
+                return '50' + country + '50' + city;
+            }
+        }
+
+        function getLocationFromTag(tag) {
+            var segs = tag.slice(2).split("50");
+            return {
+                country: segs[0],
+                city: segs[1]
+            }
+        }
+
+        function changeStage(stage) {
+            switch(stage) {
+                case 0:
+                    $("#country-select").hide();
+                    $("#city-select").hide();
+                    $("#location-clear-btn").hide();
+                    break;
+                case 1:
+                    $("#country-select").val('').show();
+                    $("#city-select").val('').hide();
+                    $("#location-clear-btn").hide();
+                    break;
+                case 2:
+                    $("#country-select").show();
+                    $("#city-select").val('').show();
+                    $("#location-clear-btn").hide();
+                    break;
+                case 3:
+                    $("#country-select").show();
+                    $("#city-select").show();
+                    $("#location-clear-btn").show();
+                    break;
+            }
+        }
+
+        function displayName(name) {
+            return name
+                .split(/_/)
+                .map(function(word) {
+                    if (word.length <= 2) {
+                        return word.toUpperCase();
+                    }
+                    return _.startCase(word);
+                })
+                .join(' ');
+        }
+    }
+    window.StreetFoodFifty = new StreetFoodFifty('63a429aa-3c7e-437e-811c-4beb2f938f1d');
+    $(document).ready(function(){
+        window.StreetFoodFifty.init();
+    });
+</script>
+<script id="filterTemplate" type="text/x-jsrender">
+</script>
+<script type="text/javascript" src="//api.getcandid.com/scripts/widget.js"></script>
+<div class="form form-inline">
+    <label class="filter-bar-item">Filter: </label>
+    <select id="country-select" class="form-control filter-bar-item" onchange="StreetFoodFifty.onSelectCountry(this.value)"></select>
+    <select id="city-select" class="form-control filter-bar-item" onchange="StreetFoodFifty.onSelectCity(this.value)"></select>
+    <button id="location-clear-btn" class="form-control filter-bar-item" onclick="StreetFoodFifty.onClear()">Clear</button>
+</div>
+<div id="container"></div>
+<!-- Copy until here -->
+</body>
+</html>
