@@ -5,15 +5,87 @@
 </head>
 <body>
 <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+<div style="width: 400px; overflow: scroll;">
 <!-- Copy after here -->
 <script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.5/lodash.min.js"></script>
 <link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
 <style type="text/css">
+    .full-container {
+        width: 100%;
+        overflow: scroll;
+        display: block;
+        position: relative;
+    }
+    .filter-bar {
+        display: flex;
+        justify-content: center;
+        margin: 15px;
+        font-family: Open Sans;
+        font-weight: bold;
+        color: #CC0033;
+    }
+    label.filter-bar-item {
+        font-size: 22pt;
+    }
+    select.filter-bar-item, select.filter-bar-item:focus {
+        background: url(data:image/svg+xml;base64,PHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0Ljk1IDEwIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6I2ZmZjt9LmNscy0ye2ZpbGw6IzQ0NDt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPmFycm93czwvdGl0bGU+PHJlY3QgY2xhc3M9ImNscy0xIiB3aWR0aD0iNC45NSIgaGVpZ2h0PSIxMCIvPjxwb2x5Z29uIGNsYXNzPSJjbHMtMiIgcG9pbnRzPSIxLjQxIDQuNjcgMi40OCAzLjE4IDMuNTQgNC42NyAxLjQxIDQuNjciLz48cG9seWdvbiBjbGFzcz0iY2xzLTIiIHBvaW50cz0iMy41NCA1LjMzIDIuNDggNi44MiAxLjQxIDUuMzMgMy41NCA1LjMzIi8+PC9zdmc+) no-repeat 95% 50%;
+        -moz-appearance: none; 
+        -webkit-appearance: none; 
+        appearance: none;
+        background-color: white;
+        color: #CC0033;
+        border-radius: 0px;
+        border: 0;
+        outline: 2px solid #CC0033;
+        padding-right: 30px;
+    }
+    button.filter-bar-item {
+        background-color: #CC0033;
+        border-radius: 0px;
+        color: white;
+        border: 0px;
+        height: 42px;
+    }
+    button.filter-bar-item:active {
+        background-color: rgba(204,0,51, .6);
+        border-radius: 0px;
+        color: white;
+        border: 0px;
+        height: 42px;
+    }
     .filter-bar-item {
         margin-right: 10px;
     }
     .candid-wall-container {
-        text-align: left;
+        text-align: center;
+    }
+    .candid-wrapper{
+        display: block;
+        position: relative;
+        max-height: 640px;
+        overflow: scroll;
+        text-align: center;
+        padding-bottom: 50px;
+    }
+    .bottom-inf-scroll {
+        background: -moz-linear-gradient(top, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%); /* FF3.6-15 */
+        background: -webkit-linear-gradient(top, rgba(255,255,255,0) 0%,rgba(255,255,255,1) 100%); /* Chrome10-25,Safari5.1-6 */
+        background: linear-gradient(to bottom, rgba(255,255,255,0) 0%,rgba(255,255,255,1) 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+        filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#00ffffff',GradientType=0 ); /* IE6-9 */
+        position: absolute;
+        display: block;
+        bottom: 0;
+        width: 100%;
+        height: 40px;
+    }
+    a.candid-wall-load-more:not([href]):not([tabindex]) {
+        background-color: rgba(204,0,51, 1);
+        border-radius: 0px;
+        color: white;
+        border: 0px;
+        opacity: 1;
+        display: inline-block;
     }
 </style>
 <script id="mediaTemplate" type="text/x-jsrender"><div class="candid-wall-cell"><div class="candid-wall-overlay"></div><div class="candid-wall-overlay-text"><div>SHOP NOW</div></div><a class='media' data-media-index='{{> Index }}'><img data-original="{{> Media.Images.LowResolution.Url }}" alt="{{> Title }}" style="display:inline-block;" class="lazy"></a></div>
@@ -67,7 +139,11 @@
         }
 
         function resetWall () {
-            var options = {id: streamId}
+            var options = {
+                id: streamId,
+                count: 18,
+                loadMoreHtml: 'Load More...',
+            }
             var tag = getTag(selectedCountry, selectedCity);
             if (tag) {
                 options.tag = [tag];
@@ -164,13 +240,20 @@
 <script id="filterTemplate" type="text/x-jsrender">
 </script>
 <script type="text/javascript" src="//api.getcandid.com/scripts/widget.js"></script>
-<div class="form form-inline">
-    <label class="filter-bar-item">Filter: </label>
-    <select id="country-select" class="form-control filter-bar-item" onchange="StreetFoodFifty.onSelectCountry(this.value)"></select>
-    <select id="city-select" class="form-control filter-bar-item" onchange="StreetFoodFifty.onSelectCity(this.value)"></select>
-    <button id="location-clear-btn" class="form-control filter-bar-item" onclick="StreetFoodFifty.onClear()">Clear</button>
+<div class="full-container">
+    <div class="form form-inline filter-bar">
+        <label class="filter-bar-item">Filter: </label>
+        <select id="country-select" class="form-control filter-bar-item" onchange="StreetFoodFifty.onSelectCountry(this.value)"></select>
+        <select id="city-select" class="form-control filter-bar-item" onchange="StreetFoodFifty.onSelectCity(this.value)"></select>
+        <button id="location-clear-btn" class="form-control filter-bar-item" onclick="StreetFoodFifty.onClear()">Clear</button>
 </div>
-<div id="container"></div>
+<div class="candid-wrapper">
+    <div id="container"></div>
+</div>
+<div class="bottom-inf-scroll"></div>
+</div>
 <!-- Copy until here -->
+<h1>Below</h1>
+</div>
 </body>
 </html>
